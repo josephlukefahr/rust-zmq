@@ -8,6 +8,8 @@ use std::{ptr, slice, str};
 
 use super::errno_to_error;
 
+use super::sys::*;
+
 /// Holds a 0MQ message.
 ///
 /// A message is a single frame, either received or created locally and then
@@ -19,13 +21,13 @@ use super::errno_to_error;
 /// `Socket::send()`). However, using message objects can make multiple
 /// operations in a loop more efficient, since allocated memory can be reused.
 pub struct Message {
-    msg: zmq_sys::zmq_msg_t,
+    msg: zmq_msg_t,
 }
 
 impl Drop for Message {
     fn drop(&mut self) {
         unsafe {
-            let rc = zmq_sys::zmq_msg_close(&mut self.msg);
+            let rc = zmq_msg_close(&mut self.msg);
             assert_eq!(rc, 0);
         }
     }
@@ -44,9 +46,9 @@ unsafe extern "C" fn drop_msg_data_box(data: *mut c_void, hint: *mut c_void) {
 impl Message {
     unsafe fn alloc<F>(f: F) -> Message
     where
-        F: FnOnce(&mut zmq_sys::zmq_msg_t) -> i32,
+        F: FnOnce(&mut zmq_msg_t) -> i32,
     {
-        let mut msg = zmq_sys::zmq_msg_t::default();
+        let mut msg = zmq_msg_t::default();
         let rc = f(&mut msg);
         if rc == -1 {
             panic!("{}", errno_to_error())
@@ -56,15 +58,15 @@ impl Message {
 
     /// Create an empty `Message`.
     pub fn new() -> Message {
-        unsafe { Self::alloc(|msg| zmq_sys::zmq_msg_init(msg)) }
+        unsafe { Self::alloc(|msg| zmq_msg_init(msg)) }
     }
 
-    /// Create a `Message` from an initialized `zmq_sys::zmq_msg_t`.
+    /// Create a `Message` from an initialized `zmq_msg_t`.
     ///
     /// # Safety
     ///
     /// `msg` must be initialized.
-    pub unsafe fn from_msg(msg: zmq_sys::zmq_msg_t) -> Self {
+    pub unsafe fn from_msg(msg: zmq_msg_t) -> Self {
         Message { msg }
     }
 
@@ -87,11 +89,11 @@ impl Message {
         note = "This method has an unintuitive name, and should not be needed."
     )]
     pub unsafe fn with_capacity_unallocated(len: usize) -> Message {
-        Self::alloc(|msg| zmq_sys::zmq_msg_init_size(msg, len as size_t))
+        Self::alloc(|msg| zmq_msg_init_size(msg, len as size_t))
     }
 
     unsafe fn with_size_uninit(len: usize) -> Message {
-        Self::alloc(|msg| zmq_sys::zmq_msg_init_size(msg, len as size_t))
+        Self::alloc(|msg| zmq_msg_init_size(msg, len as size_t))
     }
 
     /// Create a `Message` with space for `len` bytes that are initialized to 0.
@@ -128,7 +130,7 @@ impl Message {
     /// Return the `ZMQ_MORE` flag, which indicates if more parts of a multipart
     /// message will follow.
     pub fn get_more(&self) -> bool {
-        let rc = unsafe { zmq_sys::zmq_msg_more(&self.msg) };
+        let rc = unsafe { zmq_msg_more(&self.msg) };
         rc != 0
     }
 
@@ -147,7 +149,7 @@ impl Message {
     pub fn gets<'a>(&'a mut self, property: &str) -> Option<&'a str> {
         let c_str = ffi::CString::new(property.as_bytes()).unwrap();
 
-        let value = unsafe { zmq_sys::zmq_msg_gets(&self.msg, c_str.as_ptr()) };
+        let value = unsafe { zmq_msg_gets(&self.msg, c_str.as_ptr()) };
 
         if value.is_null() {
             None
@@ -165,8 +167,8 @@ impl Deref for Message {
         // this message.
         unsafe {
             let ptr = &self.msg as *const _ as *mut _;
-            let data = zmq_sys::zmq_msg_data(ptr);
-            let len = zmq_sys::zmq_msg_size(ptr) as usize;
+            let data = zmq_msg_data(ptr);
+            let len = zmq_msg_size(ptr) as usize;
             slice::from_raw_parts(data as *mut u8, len)
         }
     }
@@ -185,8 +187,8 @@ impl DerefMut for Message {
         // This is safe because we're constraining the slice to the lifetime of
         // this message.
         unsafe {
-            let data = zmq_sys::zmq_msg_data(&mut self.msg);
-            let len = zmq_sys::zmq_msg_size(&self.msg) as usize;
+            let data = zmq_msg_data(&mut self.msg);
+            let len = zmq_msg_size(&self.msg) as usize;
             slice::from_raw_parts_mut(data as *mut u8, len)
         }
     }
@@ -220,7 +222,7 @@ impl From<Box<[u8]>> for Message {
         let raw = Box::into_raw(data);
         unsafe {
             Self::alloc(|msg| {
-                zmq_sys::zmq_msg_init_data(
+                zmq_msg_init_data(
                     msg,
                     raw as *mut c_void,
                     len,
@@ -256,6 +258,6 @@ where
 }
 
 /// Get the low-level C pointer.
-pub fn msg_ptr(msg: &mut Message) -> *mut zmq_sys::zmq_msg_t {
+pub fn msg_ptr(msg: &mut Message) -> *mut zmq_msg_t {
     &mut msg.msg
 }

@@ -1,5 +1,5 @@
 use zmq::*;
-use zmq_sys::errno;
+use zmq::sys::errno;
 
 #[test]
 fn from_raw_eintr() {

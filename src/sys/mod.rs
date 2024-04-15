@@ -3,7 +3,7 @@ extern crate libc;
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
-pub use crate::unix::RawFd;
+pub use unix::RawFd;
 
 #[cfg(windows)]
 mod windows;
@@ -12,7 +12,7 @@ pub use windows::RawFd;
 
 pub mod errno;
 
-pub use crate::ffi::{
+pub use ffi::{
     // These are the non-deprecated constants defined in zmq.h. Note that this
     // list exceeds what is defined by the current minimum required version of
     // libzmq, but is instead based on the latest stable release. The idea here
