@@ -1,5 +1,7 @@
 Rust ZeroMQ bindings.
 
+**JWL: This fork mainly moves to dynamic linking of `libzmq`.  The library must be installed to the system path for this crate to work!**
+
 [![Travis Build Status](https://travis-ci.org/erickt/rust-zmq.png?branch=master)](https://travis-ci.org/erickt/rust-zmq)
 [![Appveyor Build status](https://ci.appveyor.com/api/projects/status/xhytsx4jwyb9qk7m?svg=true)](https://ci.appveyor.com/project/erickt/rust-zmq)
 [![Coverage Status](https://coveralls.io/repos/erickt/erickt-zmq/badge.svg?branch=master)](https://coveralls.io/r/erickt/erickt-zmq?branch=master)
